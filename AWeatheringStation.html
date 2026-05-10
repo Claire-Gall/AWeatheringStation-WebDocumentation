@@ -1,0 +1,1767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Weathering Station:Autographic Comprehension of a Fog Layer</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Mono:wght@300;400&display=swap');
+
+:root {
+  --bg:      #ffffff;
+  --ink:     #0b0b0b;
+  --muted:   #888;
+  --rule:    #d0d0d0;
+  --line:    #0a0a0a;
+  --frame-w: 100vw;
+  --frame-h: 100vh;
+  --img-w:   52vw;
+  --img-h:   62vh;
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-mono:    'DM Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  font-family: var(--font-mono);
+  -webkit-font-smoothing: antialiased;
+  cursor: none;
+}
+
+.cursor {
+  position: fixed;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--ink);
+  background: transparent;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%,-50%);
+  transition: width 0.2s, height 0.2s, border-color 0.2s;
+}
+.cursor.big { width: 28px; height: 28px; border-color: var(--muted); }
+
+header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 22px 36px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+.h-name { font-size: 10px; letter-spacing: 0.12em; color: var(--ink); }
+.h-count { font-size: 10px; letter-spacing: 0.1em; color: var(--muted); }
+
+.progress {
+  position: fixed;
+  bottom: 0; left: 0;
+  height: 1px;
+  background: var(--ink);
+  width: 0%;
+  z-index: 100;
+  transition: width 0.4s cubic-bezier(0.77,0,0.18,1);
+}
+
+.hint {
+  position: fixed;
+  bottom: 28px; right: 36px;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  z-index: 100;
+  transition: opacity 0.4s;
+}
+
+.stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+.track {
+  display: flex;
+  height: 100%;
+  will-change: transform;
+  transition: transform 0.65s cubic-bezier(0.77,0,0.18,1);
+}
+
+.frame {
+  position: relative;
+  flex: 0 0 var(--frame-w);
+  width: var(--frame-w);
+  height: var(--frame-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.img-wrap {
+  position: relative;
+  width: var(--img-w);
+  height: var(--img-h);
+  flex-shrink: 0;
+  z-index: 4;
+}
+
+.img-box {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--ink);
+  overflow: hidden;
+  background: #e0e0e0;
+  position: relative;
+}
+
+.img-box img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: none;
+  filter: grayscale(1);
+}
+
+.img-placeholder {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; letter-spacing: 0.16em;
+  text-transform: uppercase; color: #aaa;
+}
+
+.desc {
+  position: absolute;
+  right: calc(var(--img-w) + 3vw);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16vw;
+  min-width: 160px;
+  text-align: right;
+  z-index: 5;
+}
+
+.desc-num {
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  color: var(--muted);
+  margin-bottom: 10px;
+  display: block;
+}
+
+.desc-title {
+  font-family: var(--font-display);
+  font-size: clamp(14px, 1.6vw, 22px);
+  font-style: italic;
+  line-height: 1.3;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+
+.desc-body {
+  font-size: 10px;
+  line-height: 1.85;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.bleed-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+  overflow: visible;
+}
+
+.bleed-svg line {
+  stroke: var(--line);
+  stroke-width: 0.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.bleed-svg circle {
+  fill: var(--bg);
+  stroke: var(--line);
+  stroke-width: 0.6;
+  vector-effect: non-scaling-stroke;
+}
+
+.frame .img-wrap,
+.frame .desc,
+.frame .bleed-svg {
+  opacity: 0;
+  transition: opacity 0.55s ease 0.15s;
+}
+
+.frame.active .img-wrap,
+.frame.active .desc,
+.frame.active .bleed-svg { opacity: 1; }
+
+.frame.visited .img-wrap,
+.frame.visited .desc,
+.frame.visited .bleed-svg { opacity: 0.12; }
+
+footer {
+  position: fixed;
+  bottom: 14px; left: 36px;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  z-index: 100;
+}
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+
+<header>
+  <span class="h-name">Claire Galla</span>
+  <span class="h-count" id="frameCount">01 / 30</span>
+</header>
+
+<div class="progress" id="progress"></div>
+<div class="hint" id="hint">Click to advance →</div>
+
+<footer>A Weathering Station: Autographic Comprehension of a Fog Layer</footer>
+
+<div class="stage">
+  <div class="track" id="track">
+
+    <!-- ── FRAME 1 ─────────────────────────── -->
+    <div class="frame active" id="f0">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="27.7" y1="81" x2="27.7" y2="90.3"/>
+        <circle cx="27.7" cy="91.8" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">01</span>
+        <p class="desc-title">Spatializing Inversion Shifts of a Fog Cloud</p>
+        <p class="desc-body">Is an ongoing humanities and spatial research project that looks at systems of atmospheric relations as formed through granular local microclimates, which fog clouds signify in certain places of the world. This project views the fog layer as grounding people in a hyper-local ephemeral experience while lending their cognition to a realm of universal humidity, as air and air moisture reflect climatic fluctuation between the local, regional and planetary scale. This project creates an index of fog-informed logics around its legibility via various media forms- from digital translations to physical traces of trans-coded data, to critical writing. With this, the goal is to make the process of documenting illusory atmospheric data visible via movement and geometric notation. 
+
+This forms a new type of legibility for the micro fluid dynamics of fog clouds as they interact with terrain. This work is developed alongside ecologies of clouds as they have and will continue to enter cultural and geo-political conversation around methods of climate change mitigation and cloud fragmentation for the sake of bringing them more granular forms of resolution within digital computation. 
+
+Clouds, while hard to pin down via remote sensing, are also being removed from satellite imagery to bring greater resolution to the terrain further showcasing a gap in their representation even with the criticality they serve ecosystems, especially fog clouds whose ecosystems deeply depend on their moisture. I challenge attempts to remove or flatten cloud logics within digital tools by centering movement-based modes of cloud translation
+
+ With an increase in climatic flux, clouds become more illusory and worthy of alternative modes of comprehension. </p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="Untitled_Artwork.jpg" alt="Frame 1">
+          <div class="img-placeholder">Image 1</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 1 -->
+
+    <!-- ── FRAME 2 ─────────────────────────── -->
+    <div class="frame" id="f1">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="26.0" y1="81" x2="26.0" y2="99.0"/>
+        <circle cx="26.0" cy="100.5" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">02</span>
+        <p class="desc-title">Fog moves though various interfaces, be it ecological, material and now digital- how might we witness it in its transitional state?</p>
+        <p class="desc-body">Through ground-based data readings across different elevation points, this project analyzes fog as a spatial object that is constantly in flux due to changes in air temperature and pressure due to climate change.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="interpolation.png" alt="Frame 2">
+          <div class="img-placeholder">Image 2</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 2 -->
+
+    <!-- ── FRAME 3 ─────────────────────────── -->
+    <div class="frame" id="f2">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="27.9" y1="81" x2="27.9" y2="90.5"/>
+        <circle cx="27.9" cy="92.0" r="0.8"/>
+        <line x1="49.3" y1="81" x2="49.3" y2="93.6"/>
+        <circle cx="49.3" cy="95.1" r="0.8"/>
+        <line x1="27.0" y1="19" x2="27.0" y2="6.1"/>
+        <circle cx="27.0" cy="4.6" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">03</span>
+        <p class="desc-title">Site: Slide Ranch</p>
+        <p class="desc-body">I developed this project based around the fog layer that coats the redwood trees of the Headlands in Northern California. Working in partnership with a ranch and land conservancy group Slide Ranch on the integration of fog-led infrastructure, public art and cultural programming towards a more expansive index of alternative water infrastructures with shifting conditions of drought and water scarcity.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="sitecollage.png" alt="Frame 3">
+          <div class="img-placeholder">Image 2</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 3 -->
+
+    <!-- ── FRAME 4 ─────────────────────────── -->
+    <div class="frame" id="f3">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="27.8" y1="81" x2="27.8" y2="96.5"/>
+        <circle cx="27.8" cy="98.0" r="0.8"/>
+        <line x1="50.0" y1="81" x2="50.0" y2="90.9"/>
+        <circle cx="50.0" cy="92.4" r="0.8"/>
+        <line x1="26.7" y1="19" x2="26.7" y2="0.5"/>
+        <circle cx="26.7" cy="-1.0" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">04</span>
+        <p class="desc-title">Frame 4 Title</p>
+        <p class="desc-body">Description for frame 4. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="notationexperiment1.png" alt="Frame 4">
+          <div class="img-placeholder">Image 4</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 4 -->
+
+    <!-- ── FRAME 5 ─────────────────────────── -->
+    <div class="frame" id="f4">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="27.9" y1="81" x2="27.9" y2="89.5"/>
+        <circle cx="27.9" cy="91.0" r="0.8"/>
+        <line x1="42.4" y1="81" x2="42.4" y2="91.7"/>
+        <circle cx="42.4" cy="93.2" r="0.8"/>
+        <line x1="57.0" y1="81" x2="57.0" y2="99.3"/>
+        <circle cx="57.0" cy="100.8" r="0.8"/>
+        <line x1="26.7" y1="19" x2="26.7" y2="10.3"/>
+        <circle cx="26.7" cy="8.8" r="0.8"/>
+        <line x1="49.9" y1="19" x2="49.9" y2="1.8"/>
+        <circle cx="49.9" cy="0.3" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">05</span>
+        <p class="desc-title">Frame 5 Title</p>
+        <p class="desc-body">Description for frame 5. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="notationexperiment1-2.png" alt="Frame 5">
+          <div class="img-placeholder">Image 5</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 5 -->
+
+    <!-- ── FRAME 6 ─────────────────────────── -->
+    <div class="frame" id="f5">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="27.2" y1="81" x2="27.2" y2="94.6"/>
+        <circle cx="27.2" cy="96.1" r="0.8"/>
+        <line x1="42.4" y1="81" x2="42.4" y2="93.7"/>
+        <circle cx="42.4" cy="95.2" r="0.8"/>
+        <line x1="58.5" y1="81" x2="58.5" y2="97.4"/>
+        <circle cx="58.5" cy="98.9" r="0.8"/>
+        <line x1="26.7" y1="19" x2="26.7" y2="0.5"/>
+        <circle cx="26.7" cy="-1.0" r="0.8"/>
+        <line x1="49.5" y1="19" x2="49.5" y2="2.4"/>
+        <circle cx="49.5" cy="0.9" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">06</span>
+        <p class="desc-title">Zones of Variability</p>
+        <p class="desc-body">This project invokes fog variability as a variability of terrain and vertical temperature shifts</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="circlezonesketch.png" alt="Frame 6">
+          <div class="img-placeholder">Image 6</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 6 -->
+
+    <!-- ── FRAME 7 ─────────────────────────── -->
+    <div class="frame" id="f6">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="26.7" y1="81" x2="26.7" y2="92.0"/>
+        <circle cx="26.7" cy="93.5" r="0.8"/>
+        <line x1="38.3" y1="81" x2="38.3" y2="97.5"/>
+        <circle cx="38.3" cy="99.0" r="0.8"/>
+        <line x1="50.1" y1="81" x2="50.1" y2="98.8"/>
+        <circle cx="50.1" cy="100.3" r="0.8"/>
+        <line x1="61.4" y1="81" x2="61.4" y2="92.9"/>
+        <circle cx="61.4" cy="94.4" r="0.8"/>
+        <line x1="27.2" y1="19" x2="27.2" y2="6.1"/>
+        <circle cx="27.2" cy="4.6" r="0.8"/>
+        <line x1="49.8" y1="19" x2="49.8" y2="3.5"/>
+        <circle cx="49.8" cy="2.0" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">07</span>
+        <p class="desc-title">Frame 7 Title</p>
+        <p class="desc-body">Description for frame 7. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 7">
+          <div class="img-placeholder">Image 7</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 7 -->
+
+    <!-- ── FRAME 8 ─────────────────────────── -->
+    <div class="frame" id="f7">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="27.9" y1="81" x2="27.9" y2="96.3"/>
+        <circle cx="27.9" cy="97.8" r="0.8"/>
+        <line x1="38.0" y1="81" x2="38.0" y2="99.5"/>
+        <circle cx="38.0" cy="101.0" r="0.8"/>
+        <line x1="49.5" y1="81" x2="49.5" y2="99.0"/>
+        <circle cx="49.5" cy="100.5" r="0.8"/>
+        <line x1="61.0" y1="81" x2="61.0" y2="93.4"/>
+        <circle cx="61.0" cy="94.9" r="0.8"/>
+        <line x1="26.1" y1="19" x2="26.1" y2="4.7"/>
+        <circle cx="26.1" cy="3.2" r="0.8"/>
+        <line x1="43.2" y1="19" x2="43.2" y2="10.9"/>
+        <circle cx="43.2" cy="9.4" r="0.8"/>
+        <line x1="56.7" y1="19" x2="56.7" y2="6.6"/>
+        <circle cx="56.7" cy="5.1" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">08</span>
+        <p class="desc-title">Frame 8 Title</p>
+        <p class="desc-body">Description for frame 8. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 8">
+          <div class="img-placeholder">Image 8</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 8 -->
+
+    <!-- ── FRAME 9 ─────────────────────────── -->
+    <div class="frame" id="f8">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="27.7" y1="81" x2="27.7" y2="99.5"/>
+        <circle cx="27.7" cy="101.0" r="0.8"/>
+        <line x1="36.6" y1="81" x2="36.6" y2="96.7"/>
+        <circle cx="36.6" cy="98.2" r="0.8"/>
+        <line x1="46.0" y1="81" x2="46.0" y2="99.5"/>
+        <circle cx="46.0" cy="101.0" r="0.8"/>
+        <line x1="55.0" y1="81" x2="55.0" y2="98.1"/>
+        <circle cx="55.0" cy="99.6" r="0.8"/>
+        <line x1="64.2" y1="81" x2="64.2" y2="95.3"/>
+        <circle cx="64.2" cy="96.8" r="0.8"/>
+        <line x1="26.7" y1="19" x2="26.7" y2="5.5"/>
+        <circle cx="26.7" cy="4.0" r="0.8"/>
+        <line x1="42.3" y1="19" x2="42.3" y2="3.3"/>
+        <circle cx="42.3" cy="1.8" r="0.8"/>
+        <line x1="58.4" y1="19" x2="58.4" y2="10.1"/>
+        <circle cx="58.4" cy="8.6" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">09</span>
+        <p class="desc-title">Frame 9 Title</p>
+        <p class="desc-body">Description for frame 9. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 9">
+          <div class="img-placeholder">Image 9</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 9 -->
+
+    <!-- ── FRAME 10 ─────────────────────────── -->
+    <div class="frame" id="f9">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="26.8" y1="81" x2="26.8" y2="89.4"/>
+        <circle cx="26.8" cy="90.9" r="0.8"/>
+        <line x1="36.8" y1="81" x2="36.8" y2="89.0"/>
+        <circle cx="36.8" cy="90.5" r="0.8"/>
+        <line x1="44.5" y1="81" x2="44.5" y2="95.2"/>
+        <circle cx="44.5" cy="96.7" r="0.8"/>
+        <line x1="54.0" y1="81" x2="54.0" y2="94.6"/>
+        <circle cx="54.0" cy="96.1" r="0.8"/>
+        <line x1="63.2" y1="81" x2="63.2" y2="96.2"/>
+        <circle cx="63.2" cy="97.7" r="0.8"/>
+        <line x1="26.0" y1="19" x2="26.0" y2="0.5"/>
+        <circle cx="26.0" cy="-1.0" r="0.8"/>
+        <line x1="38.9" y1="19" x2="38.9" y2="3.7"/>
+        <circle cx="38.9" cy="2.2" r="0.8"/>
+        <line x1="50.4" y1="19" x2="50.4" y2="1.7"/>
+        <circle cx="50.4" cy="0.2" r="0.8"/>
+        <line x1="60.8" y1="19" x2="60.8" y2="3.7"/>
+        <circle cx="60.8" cy="2.2" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">10</span>
+        <p class="desc-title">Frame 10 Title</p>
+        <p class="desc-body">Description for frame 10. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 10">
+          <div class="img-placeholder">Image 10</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 10 -->
+
+    <!-- ── FRAME 11 ─────────────────────────── -->
+    <div class="frame" id="f10">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="27.1" y1="81" x2="27.1" y2="91.4"/>
+        <circle cx="27.1" cy="92.9" r="0.8"/>
+        <line x1="35.6" y1="81" x2="35.6" y2="89.3"/>
+        <circle cx="35.6" cy="90.8" r="0.8"/>
+        <line x1="44.9" y1="81" x2="44.9" y2="95.2"/>
+        <circle cx="44.9" cy="96.7" r="0.8"/>
+        <line x1="54.2" y1="81" x2="54.2" y2="97.7"/>
+        <circle cx="54.2" cy="99.2" r="0.8"/>
+        <line x1="64.0" y1="81" x2="64.0" y2="96.5"/>
+        <circle cx="64.0" cy="98.0" r="0.8"/>
+        <line x1="27.7" y1="19" x2="27.7" y2="10.8"/>
+        <circle cx="27.7" cy="9.3" r="0.8"/>
+        <line x1="38.6" y1="19" x2="38.6" y2="3.7"/>
+        <circle cx="38.6" cy="2.2" r="0.8"/>
+        <line x1="49.3" y1="19" x2="49.3" y2="10.0"/>
+        <circle cx="49.3" cy="8.5" r="0.8"/>
+        <line x1="62.3" y1="19" x2="62.3" y2="2.0"/>
+        <circle cx="62.3" cy="0.5" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">11</span>
+        <p class="desc-title">Frame 11 Title</p>
+        <p class="desc-body">Description for frame 11. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 11">
+          <div class="img-placeholder">Image 11</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 11 -->
+
+    <!-- ── FRAME 12 ─────────────────────────── -->
+    <div class="frame" id="f11">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="27.2" y1="81" x2="27.2" y2="96.9"/>
+        <circle cx="27.2" cy="98.4" r="0.8"/>
+        <line x1="34.8" y1="81" x2="34.8" y2="95.1"/>
+        <circle cx="34.8" cy="96.6" r="0.8"/>
+        <line x1="41.6" y1="81" x2="41.6" y2="99.0"/>
+        <circle cx="41.6" cy="100.5" r="0.8"/>
+        <line x1="49.1" y1="81" x2="49.1" y2="93.3"/>
+        <circle cx="49.1" cy="94.8" r="0.8"/>
+        <line x1="58.4" y1="81" x2="58.4" y2="99.5"/>
+        <circle cx="58.4" cy="101.0" r="0.8"/>
+        <line x1="64.9" y1="81" x2="64.9" y2="97.4"/>
+        <circle cx="64.9" cy="98.9" r="0.8"/>
+        <line x1="26.2" y1="19" x2="26.2" y2="2.4"/>
+        <circle cx="26.2" cy="0.9" r="0.8"/>
+        <line x1="35.4" y1="19" x2="35.4" y2="3.6"/>
+        <circle cx="35.4" cy="2.1" r="0.8"/>
+        <line x1="45.0" y1="19" x2="45.0" y2="1.5"/>
+        <circle cx="45.0" cy="0.0" r="0.8"/>
+        <line x1="54.2" y1="19" x2="54.2" y2="7.7"/>
+        <circle cx="54.2" cy="6.2" r="0.8"/>
+        <line x1="63.2" y1="19" x2="63.2" y2="2.5"/>
+        <circle cx="63.2" cy="1.0" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">12</span>
+        <p class="desc-title">Frame 12 Title</p>
+        <p class="desc-body">Description for frame 12. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 12">
+          <div class="img-placeholder">Image 12</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 12 -->
+
+    <!-- ── FRAME 13 ─────────────────────────── -->
+    <div class="frame" id="f12">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="26.2" y1="81" x2="26.2" y2="91.9"/>
+        <circle cx="26.2" cy="93.4" r="0.8"/>
+        <line x1="35.6" y1="81" x2="35.6" y2="97.1"/>
+        <circle cx="35.6" cy="98.6" r="0.8"/>
+        <line x1="42.8" y1="81" x2="42.8" y2="98.9"/>
+        <circle cx="42.8" cy="100.4" r="0.8"/>
+        <line x1="49.5" y1="81" x2="49.5" y2="94.0"/>
+        <circle cx="49.5" cy="95.5" r="0.8"/>
+        <line x1="57.7" y1="81" x2="57.7" y2="95.8"/>
+        <circle cx="57.7" cy="97.3" r="0.8"/>
+        <line x1="65.8" y1="81" x2="65.8" y2="95.4"/>
+        <circle cx="65.8" cy="96.9" r="0.8"/>
+        <line x1="28.0" y1="19" x2="28.0" y2="0.5"/>
+        <circle cx="28.0" cy="-1.0" r="0.8"/>
+        <line x1="37.1" y1="19" x2="37.1" y2="0.5"/>
+        <circle cx="37.1" cy="-1.0" r="0.8"/>
+        <line x1="44.5" y1="19" x2="44.5" y2="5.1"/>
+        <circle cx="44.5" cy="3.6" r="0.8"/>
+        <line x1="54.2" y1="19" x2="54.2" y2="2.8"/>
+        <circle cx="54.2" cy="1.3" r="0.8"/>
+        <line x1="63.7" y1="19" x2="63.7" y2="8.9"/>
+        <circle cx="63.7" cy="7.4" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">13</span>
+        <p class="desc-title">Frame 13 Title</p>
+        <p class="desc-body">Description for frame 13. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 13">
+          <div class="img-placeholder">Image 13</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 13 -->
+
+    <!-- ── FRAME 14 ─────────────────────────── -->
+    <div class="frame" id="f13">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="26.5" y1="81" x2="26.5" y2="96.1"/>
+        <circle cx="26.5" cy="97.6" r="0.8"/>
+        <line x1="33.3" y1="81" x2="33.3" y2="96.6"/>
+        <circle cx="33.3" cy="98.1" r="0.8"/>
+        <line x1="40.7" y1="81" x2="40.7" y2="95.0"/>
+        <circle cx="40.7" cy="96.5" r="0.8"/>
+        <line x1="47.5" y1="81" x2="47.5" y2="90.2"/>
+        <circle cx="47.5" cy="91.7" r="0.8"/>
+        <line x1="54.3" y1="81" x2="54.3" y2="89.4"/>
+        <circle cx="54.3" cy="90.9" r="0.8"/>
+        <line x1="60.3" y1="81" x2="60.3" y2="89.1"/>
+        <circle cx="60.3" cy="90.6" r="0.8"/>
+        <line x1="66.4" y1="81" x2="66.4" y2="95.0"/>
+        <circle cx="66.4" cy="96.5" r="0.8"/>
+        <line x1="27.0" y1="19" x2="27.0" y2="2.7"/>
+        <circle cx="27.0" cy="1.2" r="0.8"/>
+        <line x1="35.5" y1="19" x2="35.5" y2="0.5"/>
+        <circle cx="35.5" cy="-1.0" r="0.8"/>
+        <line x1="45.1" y1="19" x2="45.1" y2="1.1"/>
+        <circle cx="45.1" cy="-0.4" r="0.8"/>
+        <line x1="55.2" y1="19" x2="55.2" y2="5.9"/>
+        <circle cx="55.2" cy="4.4" r="0.8"/>
+        <line x1="64.2" y1="19" x2="64.2" y2="7.3"/>
+        <circle cx="64.2" cy="5.8" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">14</span>
+        <p class="desc-title">Frame 14 Title</p>
+        <p class="desc-body">Description for frame 14. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 14">
+          <div class="img-placeholder">Image 14</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 14 -->
+
+    <!-- ── FRAME 15 ─────────────────────────── -->
+    <div class="frame" id="f14">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="26.7" y1="81" x2="26.7" y2="92.9"/>
+        <circle cx="26.7" cy="94.4" r="0.8"/>
+        <line x1="33.6" y1="81" x2="33.6" y2="91.9"/>
+        <circle cx="33.6" cy="93.4" r="0.8"/>
+        <line x1="39.9" y1="81" x2="39.9" y2="94.7"/>
+        <circle cx="39.9" cy="96.2" r="0.8"/>
+        <line x1="47.3" y1="81" x2="47.3" y2="91.2"/>
+        <circle cx="47.3" cy="92.7" r="0.8"/>
+        <line x1="52.3" y1="81" x2="52.3" y2="98.2"/>
+        <circle cx="52.3" cy="99.7" r="0.8"/>
+        <line x1="59.8" y1="81" x2="59.8" y2="94.8"/>
+        <circle cx="59.8" cy="96.3" r="0.8"/>
+        <line x1="66.3" y1="81" x2="66.3" y2="93.7"/>
+        <circle cx="66.3" cy="95.2" r="0.8"/>
+        <line x1="26.8" y1="19" x2="26.8" y2="9.4"/>
+        <circle cx="26.8" cy="7.9" r="0.8"/>
+        <line x1="35.0" y1="19" x2="35.0" y2="0.5"/>
+        <circle cx="35.0" cy="-1.0" r="0.8"/>
+        <line x1="41.9" y1="19" x2="41.9" y2="1.9"/>
+        <circle cx="41.9" cy="0.4" r="0.8"/>
+        <line x1="49.8" y1="19" x2="49.8" y2="1.8"/>
+        <circle cx="49.8" cy="0.3" r="0.8"/>
+        <line x1="56.8" y1="19" x2="56.8" y2="0.5"/>
+        <circle cx="56.8" cy="-1.0" r="0.8"/>
+        <line x1="65.0" y1="19" x2="65.0" y2="10.2"/>
+        <circle cx="65.0" cy="8.7" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">15</span>
+        <p class="desc-title">Frame 15 Title</p>
+        <p class="desc-body">Description for frame 15. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 15">
+          <div class="img-placeholder">Image 15</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 15 -->
+
+    <!-- ── FRAME 16 ─────────────────────────── -->
+    <div class="frame" id="f15">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="26.4" y1="81" x2="26.4" y2="90.5"/>
+        <circle cx="26.4" cy="92.0" r="0.8"/>
+        <line x1="32.2" y1="81" x2="32.2" y2="97.8"/>
+        <circle cx="32.2" cy="99.3" r="0.8"/>
+        <line x1="39.2" y1="81" x2="39.2" y2="99.5"/>
+        <circle cx="39.2" cy="101.0" r="0.8"/>
+        <line x1="43.3" y1="81" x2="43.3" y2="92.2"/>
+        <circle cx="43.3" cy="93.7" r="0.8"/>
+        <line x1="49.5" y1="81" x2="49.5" y2="93.4"/>
+        <circle cx="49.5" cy="94.9" r="0.8"/>
+        <line x1="55.9" y1="81" x2="55.9" y2="90.5"/>
+        <circle cx="55.9" cy="92.0" r="0.8"/>
+        <line x1="61.9" y1="81" x2="61.9" y2="93.4"/>
+        <circle cx="61.9" cy="94.9" r="0.8"/>
+        <line x1="68.2" y1="81" x2="68.2" y2="90.8"/>
+        <circle cx="68.2" cy="92.3" r="0.8"/>
+        <line x1="27.9" y1="19" x2="27.9" y2="4.0"/>
+        <circle cx="27.9" cy="2.5" r="0.8"/>
+        <line x1="34.1" y1="19" x2="34.1" y2="4.7"/>
+        <circle cx="34.1" cy="3.2" r="0.8"/>
+        <line x1="42.0" y1="19" x2="42.0" y2="9.5"/>
+        <circle cx="42.0" cy="8.0" r="0.8"/>
+        <line x1="49.6" y1="19" x2="49.6" y2="6.0"/>
+        <circle cx="49.6" cy="4.5" r="0.8"/>
+        <line x1="58.1" y1="19" x2="58.1" y2="9.1"/>
+        <circle cx="58.1" cy="7.6" r="0.8"/>
+        <line x1="64.9" y1="19" x2="64.9" y2="5.3"/>
+        <circle cx="64.9" cy="3.8" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">16</span>
+        <p class="desc-title">Frame 16 Title</p>
+        <p class="desc-body">Description for frame 16. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 16">
+          <div class="img-placeholder">Image 16</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 16 -->
+
+    <!-- ── FRAME 17 ─────────────────────────── -->
+    <div class="frame" id="f16">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="27.5" y1="81" x2="27.5" y2="94.8"/>
+        <circle cx="27.5" cy="96.3" r="0.8"/>
+        <line x1="32.7" y1="81" x2="32.7" y2="96.6"/>
+        <circle cx="32.7" cy="98.1" r="0.8"/>
+        <line x1="37.7" y1="81" x2="37.7" y2="99.5"/>
+        <circle cx="37.7" cy="101.0" r="0.8"/>
+        <line x1="44.8" y1="81" x2="44.8" y2="95.5"/>
+        <circle cx="44.8" cy="97.0" r="0.8"/>
+        <line x1="50.3" y1="81" x2="50.3" y2="89.5"/>
+        <circle cx="50.3" cy="91.0" r="0.8"/>
+        <line x1="56.3" y1="81" x2="56.3" y2="99.5"/>
+        <circle cx="56.3" cy="101.0" r="0.8"/>
+        <line x1="62.4" y1="81" x2="62.4" y2="91.7"/>
+        <circle cx="62.4" cy="93.2" r="0.8"/>
+        <line x1="66.6" y1="81" x2="66.6" y2="91.9"/>
+        <circle cx="66.6" cy="93.4" r="0.8"/>
+        <line x1="28.0" y1="19" x2="28.0" y2="0.5"/>
+        <circle cx="28.0" cy="-1.0" r="0.8"/>
+        <line x1="33.3" y1="19" x2="33.3" y2="4.0"/>
+        <circle cx="33.3" cy="2.5" r="0.8"/>
+        <line x1="40.4" y1="19" x2="40.4" y2="8.5"/>
+        <circle cx="40.4" cy="7.0" r="0.8"/>
+        <line x1="47.2" y1="19" x2="47.2" y2="2.7"/>
+        <circle cx="47.2" cy="1.2" r="0.8"/>
+        <line x1="52.3" y1="19" x2="52.3" y2="8.0"/>
+        <circle cx="52.3" cy="6.5" r="0.8"/>
+        <line x1="59.3" y1="19" x2="59.3" y2="5.8"/>
+        <circle cx="59.3" cy="4.3" r="0.8"/>
+        <line x1="66.4" y1="19" x2="66.4" y2="10.8"/>
+        <circle cx="66.4" cy="9.3" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">17</span>
+        <p class="desc-title">Frame 17 Title</p>
+        <p class="desc-body">Description for frame 17. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 17">
+          <div class="img-placeholder">Image 17</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 17 -->
+
+    <!-- ── FRAME 18 ─────────────────────────── -->
+    <div class="frame" id="f17">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="28.0" y1="81" x2="28.0" y2="98.7"/>
+        <circle cx="28.0" cy="100.2" r="0.8"/>
+        <line x1="33.0" y1="81" x2="33.0" y2="96.9"/>
+        <circle cx="33.0" cy="98.4" r="0.8"/>
+        <line x1="37.8" y1="81" x2="37.8" y2="92.2"/>
+        <circle cx="37.8" cy="93.7" r="0.8"/>
+        <line x1="42.7" y1="81" x2="42.7" y2="94.5"/>
+        <circle cx="42.7" cy="96.0" r="0.8"/>
+        <line x1="47.8" y1="81" x2="47.8" y2="90.5"/>
+        <circle cx="47.8" cy="92.0" r="0.8"/>
+        <line x1="51.9" y1="81" x2="51.9" y2="89.9"/>
+        <circle cx="51.9" cy="91.4" r="0.8"/>
+        <line x1="58.2" y1="81" x2="58.2" y2="95.5"/>
+        <circle cx="58.2" cy="97.0" r="0.8"/>
+        <line x1="62.4" y1="81" x2="62.4" y2="91.9"/>
+        <circle cx="62.4" cy="93.4" r="0.8"/>
+        <line x1="68.4" y1="81" x2="68.4" y2="90.0"/>
+        <circle cx="68.4" cy="91.5" r="0.8"/>
+        <line x1="26.7" y1="19" x2="26.7" y2="3.4"/>
+        <circle cx="26.7" cy="1.9" r="0.8"/>
+        <line x1="32.8" y1="19" x2="32.8" y2="7.3"/>
+        <circle cx="32.8" cy="5.8" r="0.8"/>
+        <line x1="39.2" y1="19" x2="39.2" y2="3.1"/>
+        <circle cx="39.2" cy="1.6" r="0.8"/>
+        <line x1="46.0" y1="19" x2="46.0" y2="0.9"/>
+        <circle cx="46.0" cy="-0.6" r="0.8"/>
+        <line x1="53.8" y1="19" x2="53.8" y2="1.8"/>
+        <circle cx="53.8" cy="0.3" r="0.8"/>
+        <line x1="59.9" y1="19" x2="59.9" y2="1.6"/>
+        <circle cx="59.9" cy="0.1" r="0.8"/>
+        <line x1="66.2" y1="19" x2="66.2" y2="7.4"/>
+        <circle cx="66.2" cy="5.9" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">18</span>
+        <p class="desc-title">Frame 18 Title</p>
+        <p class="desc-body">Description for frame 18. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 18">
+          <div class="img-placeholder">Image 18</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 18 -->
+
+    <!-- ── FRAME 19 ─────────────────────────── -->
+    <div class="frame" id="f18">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="28.0" y1="81" x2="28.0" y2="89.9"/>
+        <circle cx="28.0" cy="91.4" r="0.8"/>
+        <line x1="32.8" y1="81" x2="32.8" y2="93.7"/>
+        <circle cx="32.8" cy="95.2" r="0.8"/>
+        <line x1="37.3" y1="81" x2="37.3" y2="96.5"/>
+        <circle cx="37.3" cy="98.0" r="0.8"/>
+        <line x1="42.4" y1="81" x2="42.4" y2="95.6"/>
+        <circle cx="42.4" cy="97.1" r="0.8"/>
+        <line x1="46.5" y1="81" x2="46.5" y2="90.5"/>
+        <circle cx="46.5" cy="92.0" r="0.8"/>
+        <line x1="53.5" y1="81" x2="53.5" y2="98.3"/>
+        <circle cx="53.5" cy="99.8" r="0.8"/>
+        <line x1="57.0" y1="81" x2="57.0" y2="99.5"/>
+        <circle cx="57.0" cy="101.0" r="0.8"/>
+        <line x1="63.3" y1="81" x2="63.3" y2="89.8"/>
+        <circle cx="63.3" cy="91.3" r="0.8"/>
+        <line x1="68.1" y1="81" x2="68.1" y2="92.0"/>
+        <circle cx="68.1" cy="93.5" r="0.8"/>
+        <line x1="27.2" y1="19" x2="27.2" y2="4.9"/>
+        <circle cx="27.2" cy="3.4" r="0.8"/>
+        <line x1="34.1" y1="19" x2="34.1" y2="5.2"/>
+        <circle cx="34.1" cy="3.7" r="0.8"/>
+        <line x1="39.8" y1="19" x2="39.8" y2="9.5"/>
+        <circle cx="39.8" cy="8.0" r="0.8"/>
+        <line x1="47.0" y1="19" x2="47.0" y2="6.1"/>
+        <circle cx="47.0" cy="4.6" r="0.8"/>
+        <line x1="53.2" y1="19" x2="53.2" y2="0.5"/>
+        <circle cx="53.2" cy="-1.0" r="0.8"/>
+        <line x1="60.4" y1="19" x2="60.4" y2="3.7"/>
+        <circle cx="60.4" cy="2.2" r="0.8"/>
+        <line x1="67.2" y1="19" x2="67.2" y2="0.5"/>
+        <circle cx="67.2" cy="-1.0" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">19</span>
+        <p class="desc-title">Frame 19 Title</p>
+        <p class="desc-body">Description for frame 19. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 19">
+          <div class="img-placeholder">Image 19</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 19 -->
+
+    <!-- ── FRAME 20 ─────────────────────────── -->
+    <div class="frame" id="f19">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="26.2" y1="81" x2="26.2" y2="95.7"/>
+        <circle cx="26.2" cy="97.2" r="0.8"/>
+        <line x1="31.9" y1="81" x2="31.9" y2="90.8"/>
+        <circle cx="31.9" cy="92.3" r="0.8"/>
+        <line x1="35.8" y1="81" x2="35.8" y2="94.2"/>
+        <circle cx="35.8" cy="95.7" r="0.8"/>
+        <line x1="41.3" y1="81" x2="41.3" y2="92.3"/>
+        <circle cx="41.3" cy="93.8" r="0.8"/>
+        <line x1="46.3" y1="81" x2="46.3" y2="99.5"/>
+        <circle cx="46.3" cy="101.0" r="0.8"/>
+        <line x1="49.5" y1="81" x2="49.5" y2="99.5"/>
+        <circle cx="49.5" cy="101.0" r="0.8"/>
+        <line x1="54.6" y1="81" x2="54.6" y2="99.4"/>
+        <circle cx="54.6" cy="100.9" r="0.8"/>
+        <line x1="58.4" y1="81" x2="58.4" y2="99.0"/>
+        <circle cx="58.4" cy="100.5" r="0.8"/>
+        <line x1="64.5" y1="81" x2="64.5" y2="97.4"/>
+        <circle cx="64.5" cy="98.9" r="0.8"/>
+        <line x1="67.6" y1="81" x2="67.6" y2="94.8"/>
+        <circle cx="67.6" cy="96.3" r="0.8"/>
+        <line x1="27.6" y1="19" x2="27.6" y2="0.5"/>
+        <circle cx="27.6" cy="-1.0" r="0.8"/>
+        <line x1="33.6" y1="19" x2="33.6" y2="0.5"/>
+        <circle cx="33.6" cy="-1.0" r="0.8"/>
+        <line x1="38.0" y1="19" x2="38.0" y2="0.5"/>
+        <circle cx="38.0" cy="-1.0" r="0.8"/>
+        <line x1="45.2" y1="19" x2="45.2" y2="9.4"/>
+        <circle cx="45.2" cy="7.9" r="0.8"/>
+        <line x1="49.5" y1="19" x2="49.5" y2="5.4"/>
+        <circle cx="49.5" cy="3.9" r="0.8"/>
+        <line x1="56.1" y1="19" x2="56.1" y2="9.8"/>
+        <circle cx="56.1" cy="8.3" r="0.8"/>
+        <line x1="60.8" y1="19" x2="60.8" y2="10.4"/>
+        <circle cx="60.8" cy="8.9" r="0.8"/>
+        <line x1="66.6" y1="19" x2="66.6" y2="3.9"/>
+        <circle cx="66.6" cy="2.4" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">20</span>
+        <p class="desc-title">Frame 20 Title</p>
+        <p class="desc-body">Description for frame 20. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 20">
+          <div class="img-placeholder">Image 20</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 20 -->
+
+    <!-- ── FRAME 21 ─────────────────────────── -->
+    <div class="frame" id="f20">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="26.4" y1="81" x2="26.4" y2="90.3"/>
+        <circle cx="26.4" cy="91.8" r="0.8"/>
+        <line x1="31.6" y1="81" x2="31.6" y2="96.9"/>
+        <circle cx="31.6" cy="98.4" r="0.8"/>
+        <line x1="36.4" y1="81" x2="36.4" y2="99.1"/>
+        <circle cx="36.4" cy="100.6" r="0.8"/>
+        <line x1="41.4" y1="81" x2="41.4" y2="93.8"/>
+        <circle cx="41.4" cy="95.3" r="0.8"/>
+        <line x1="44.6" y1="81" x2="44.6" y2="93.8"/>
+        <circle cx="44.6" cy="95.3" r="0.8"/>
+        <line x1="50.5" y1="81" x2="50.5" y2="92.9"/>
+        <circle cx="50.5" cy="94.4" r="0.8"/>
+        <line x1="54.6" y1="81" x2="54.6" y2="90.2"/>
+        <circle cx="54.6" cy="91.7" r="0.8"/>
+        <line x1="58.8" y1="81" x2="58.8" y2="94.3"/>
+        <circle cx="58.8" cy="95.8" r="0.8"/>
+        <line x1="62.9" y1="81" x2="62.9" y2="98.0"/>
+        <circle cx="62.9" cy="99.5" r="0.8"/>
+        <line x1="67.9" y1="81" x2="67.9" y2="89.9"/>
+        <circle cx="67.9" cy="91.4" r="0.8"/>
+        <line x1="26.6" y1="19" x2="26.6" y2="1.7"/>
+        <circle cx="26.6" cy="0.2" r="0.8"/>
+        <line x1="33.1" y1="19" x2="33.1" y2="3.9"/>
+        <circle cx="33.1" cy="2.4" r="0.8"/>
+        <line x1="38.9" y1="19" x2="38.9" y2="8.6"/>
+        <circle cx="38.9" cy="7.1" r="0.8"/>
+        <line x1="44.3" y1="19" x2="44.3" y2="8.1"/>
+        <circle cx="44.3" cy="6.6" r="0.8"/>
+        <line x1="50.6" y1="19" x2="50.6" y2="2.6"/>
+        <circle cx="50.6" cy="1.1" r="0.8"/>
+        <line x1="56.0" y1="19" x2="56.0" y2="8.9"/>
+        <circle cx="56.0" cy="7.4" r="0.8"/>
+        <line x1="61.8" y1="19" x2="61.8" y2="2.0"/>
+        <circle cx="61.8" cy="0.5" r="0.8"/>
+        <line x1="68.1" y1="19" x2="68.1" y2="6.3"/>
+        <circle cx="68.1" cy="4.8" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">21</span>
+        <p class="desc-title">Frame 21 Title</p>
+        <p class="desc-body">Description for frame 21. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 21">
+          <div class="img-placeholder">Image 21</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 21 -->
+
+    <!-- ── FRAME 22 ─────────────────────────── -->
+    <div class="frame" id="f21">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="26.1" y1="81" x2="26.1" y2="96.7"/>
+        <circle cx="26.1" cy="98.2" r="0.8"/>
+        <line x1="31.7" y1="81" x2="31.7" y2="92.3"/>
+        <circle cx="31.7" cy="93.8" r="0.8"/>
+        <line x1="36.7" y1="81" x2="36.7" y2="96.8"/>
+        <circle cx="36.7" cy="98.3" r="0.8"/>
+        <line x1="40.0" y1="81" x2="40.0" y2="99.5"/>
+        <circle cx="40.0" cy="101.0" r="0.8"/>
+        <line x1="46.2" y1="81" x2="46.2" y2="95.8"/>
+        <circle cx="46.2" cy="97.3" r="0.8"/>
+        <line x1="49.1" y1="81" x2="49.1" y2="95.0"/>
+        <circle cx="49.1" cy="96.5" r="0.8"/>
+        <line x1="54.1" y1="81" x2="54.1" y2="99.5"/>
+        <circle cx="54.1" cy="101.0" r="0.8"/>
+        <line x1="58.8" y1="81" x2="58.8" y2="90.6"/>
+        <circle cx="58.8" cy="92.1" r="0.8"/>
+        <line x1="64.8" y1="81" x2="64.8" y2="97.4"/>
+        <circle cx="64.8" cy="98.9" r="0.8"/>
+        <line x1="69.3" y1="81" x2="69.3" y2="99.5"/>
+        <circle cx="69.3" cy="101.0" r="0.8"/>
+        <line x1="26.7" y1="19" x2="26.7" y2="7.1"/>
+        <circle cx="26.7" cy="5.6" r="0.8"/>
+        <line x1="31.4" y1="19" x2="31.4" y2="3.5"/>
+        <circle cx="31.4" cy="2.0" r="0.8"/>
+        <line x1="36.7" y1="19" x2="36.7" y2="10.6"/>
+        <circle cx="36.7" cy="9.1" r="0.8"/>
+        <line x1="42.5" y1="19" x2="42.5" y2="7.5"/>
+        <circle cx="42.5" cy="6.0" r="0.8"/>
+        <line x1="48.3" y1="19" x2="48.3" y2="0.5"/>
+        <circle cx="48.3" cy="-1.0" r="0.8"/>
+        <line x1="51.8" y1="19" x2="51.8" y2="0.5"/>
+        <circle cx="51.8" cy="-1.0" r="0.8"/>
+        <line x1="58.1" y1="19" x2="58.1" y2="10.9"/>
+        <circle cx="58.1" cy="9.4" r="0.8"/>
+        <line x1="63.0" y1="19" x2="63.0" y2="0.5"/>
+        <circle cx="63.0" cy="-1.0" r="0.8"/>
+        <line x1="67.4" y1="19" x2="67.4" y2="0.9"/>
+        <circle cx="67.4" cy="-0.6" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">22</span>
+        <p class="desc-title">Frame 22 Title</p>
+        <p class="desc-body">Description for frame 22. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 22">
+          <div class="img-placeholder">Image 22</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 22 -->
+
+    <!-- ── FRAME 23 ─────────────────────────── -->
+    <div class="frame" id="f22">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="27.1" y1="81" x2="27.1" y2="97.6"/>
+        <circle cx="27.1" cy="99.1" r="0.8"/>
+        <line x1="30.6" y1="81" x2="30.6" y2="98.6"/>
+        <circle cx="30.6" cy="100.1" r="0.8"/>
+        <line x1="34.5" y1="81" x2="34.5" y2="91.4"/>
+        <circle cx="34.5" cy="92.9" r="0.8"/>
+        <line x1="39.9" y1="81" x2="39.9" y2="98.1"/>
+        <circle cx="39.9" cy="99.6" r="0.8"/>
+        <line x1="44.3" y1="81" x2="44.3" y2="90.4"/>
+        <circle cx="44.3" cy="91.9" r="0.8"/>
+        <line x1="48.6" y1="81" x2="48.6" y2="93.9"/>
+        <circle cx="48.6" cy="95.4" r="0.8"/>
+        <line x1="52.0" y1="81" x2="52.0" y2="94.1"/>
+        <circle cx="52.0" cy="95.6" r="0.8"/>
+        <line x1="55.9" y1="81" x2="55.9" y2="91.8"/>
+        <circle cx="55.9" cy="93.3" r="0.8"/>
+        <line x1="59.9" y1="81" x2="59.9" y2="98.9"/>
+        <circle cx="59.9" cy="100.4" r="0.8"/>
+        <line x1="64.5" y1="81" x2="64.5" y2="93.9"/>
+        <circle cx="64.5" cy="95.4" r="0.8"/>
+        <line x1="69.1" y1="81" x2="69.1" y2="91.6"/>
+        <circle cx="69.1" cy="93.1" r="0.8"/>
+        <line x1="26.4" y1="19" x2="26.4" y2="8.1"/>
+        <circle cx="26.4" cy="6.6" r="0.8"/>
+        <line x1="31.9" y1="19" x2="31.9" y2="0.5"/>
+        <circle cx="31.9" cy="-1.0" r="0.8"/>
+        <line x1="38.0" y1="19" x2="38.0" y2="2.7"/>
+        <circle cx="38.0" cy="1.2" r="0.8"/>
+        <line x1="42.3" y1="19" x2="42.3" y2="1.2"/>
+        <circle cx="42.3" cy="-0.3" r="0.8"/>
+        <line x1="47.0" y1="19" x2="47.0" y2="5.1"/>
+        <circle cx="47.0" cy="3.6" r="0.8"/>
+        <line x1="53.1" y1="19" x2="53.1" y2="0.5"/>
+        <circle cx="53.1" cy="-1.0" r="0.8"/>
+        <line x1="58.1" y1="19" x2="58.1" y2="7.9"/>
+        <circle cx="58.1" cy="6.4" r="0.8"/>
+        <line x1="62.5" y1="19" x2="62.5" y2="6.8"/>
+        <circle cx="62.5" cy="5.3" r="0.8"/>
+        <line x1="67.3" y1="19" x2="67.3" y2="0.5"/>
+        <circle cx="67.3" cy="-1.0" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">23</span>
+        <p class="desc-title">Frame 23 Title</p>
+        <p class="desc-body">Description for frame 23. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 23">
+          <div class="img-placeholder">Image 23</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 23 -->
+
+    <!-- ── FRAME 24 ─────────────────────────── -->
+    <div class="frame" id="f23">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="26.8" y1="81" x2="26.8" y2="94.0"/>
+        <circle cx="26.8" cy="95.5" r="0.8"/>
+        <line x1="30.8" y1="81" x2="30.8" y2="94.1"/>
+        <circle cx="30.8" cy="95.6" r="0.8"/>
+        <line x1="35.3" y1="81" x2="35.3" y2="97.2"/>
+        <circle cx="35.3" cy="98.7" r="0.8"/>
+        <line x1="39.4" y1="81" x2="39.4" y2="95.0"/>
+        <circle cx="39.4" cy="96.5" r="0.8"/>
+        <line x1="42.9" y1="81" x2="42.9" y2="91.6"/>
+        <circle cx="42.9" cy="93.1" r="0.8"/>
+        <line x1="48.8" y1="81" x2="48.8" y2="99.5"/>
+        <circle cx="48.8" cy="101.0" r="0.8"/>
+        <line x1="52.0" y1="81" x2="52.0" y2="90.5"/>
+        <circle cx="52.0" cy="92.0" r="0.8"/>
+        <line x1="56.0" y1="81" x2="56.0" y2="95.8"/>
+        <circle cx="56.0" cy="97.3" r="0.8"/>
+        <line x1="60.8" y1="81" x2="60.8" y2="94.5"/>
+        <circle cx="60.8" cy="96.0" r="0.8"/>
+        <line x1="65.0" y1="81" x2="65.0" y2="99.5"/>
+        <circle cx="65.0" cy="101.0" r="0.8"/>
+        <line x1="68.9" y1="81" x2="68.9" y2="99.0"/>
+        <circle cx="68.9" cy="100.5" r="0.8"/>
+        <line x1="26.1" y1="19" x2="26.1" y2="10.6"/>
+        <circle cx="26.1" cy="9.1" r="0.8"/>
+        <line x1="31.8" y1="19" x2="31.8" y2="9.8"/>
+        <circle cx="31.8" cy="8.3" r="0.8"/>
+        <line x1="36.6" y1="19" x2="36.6" y2="0.5"/>
+        <circle cx="36.6" cy="-1.0" r="0.8"/>
+        <line x1="40.5" y1="19" x2="40.5" y2="5.3"/>
+        <circle cx="40.5" cy="3.8" r="0.8"/>
+        <line x1="45.7" y1="19" x2="45.7" y2="1.4"/>
+        <circle cx="45.7" cy="-0.1" r="0.8"/>
+        <line x1="50.6" y1="19" x2="50.6" y2="0.5"/>
+        <circle cx="50.6" cy="-1.0" r="0.8"/>
+        <line x1="55.6" y1="19" x2="55.6" y2="3.6"/>
+        <circle cx="55.6" cy="2.1" r="0.8"/>
+        <line x1="58.6" y1="19" x2="58.6" y2="0.5"/>
+        <circle cx="58.6" cy="-1.0" r="0.8"/>
+        <line x1="63.2" y1="19" x2="63.2" y2="2.5"/>
+        <circle cx="63.2" cy="1.0" r="0.8"/>
+        <line x1="68.8" y1="19" x2="68.8" y2="11.0"/>
+        <circle cx="68.8" cy="9.5" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">24</span>
+        <p class="desc-title">Frame 24 Title</p>
+        <p class="desc-body">Description for frame 24. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 24">
+          <div class="img-placeholder">Image 24</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 24 -->
+
+    <!-- ── FRAME 25 ─────────────────────────── -->
+    <div class="frame" id="f24">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="26.6" y1="81" x2="26.6" y2="92.9"/>
+        <circle cx="26.6" cy="94.4" r="0.8"/>
+        <line x1="30.9" y1="81" x2="30.9" y2="91.9"/>
+        <circle cx="30.9" cy="93.4" r="0.8"/>
+        <line x1="34.3" y1="81" x2="34.3" y2="91.6"/>
+        <circle cx="34.3" cy="93.1" r="0.8"/>
+        <line x1="37.7" y1="81" x2="37.7" y2="90.2"/>
+        <circle cx="37.7" cy="91.7" r="0.8"/>
+        <line x1="41.3" y1="81" x2="41.3" y2="91.0"/>
+        <circle cx="41.3" cy="92.5" r="0.8"/>
+        <line x1="45.8" y1="81" x2="45.8" y2="89.5"/>
+        <circle cx="45.8" cy="91.0" r="0.8"/>
+        <line x1="49.5" y1="81" x2="49.5" y2="97.4"/>
+        <circle cx="49.5" cy="98.9" r="0.8"/>
+        <line x1="53.2" y1="81" x2="53.2" y2="91.5"/>
+        <circle cx="53.2" cy="93.0" r="0.8"/>
+        <line x1="57.2" y1="81" x2="57.2" y2="97.8"/>
+        <circle cx="57.2" cy="99.3" r="0.8"/>
+        <line x1="60.8" y1="81" x2="60.8" y2="96.4"/>
+        <circle cx="60.8" cy="97.9" r="0.8"/>
+        <line x1="65.0" y1="81" x2="65.0" y2="99.3"/>
+        <circle cx="65.0" cy="100.8" r="0.8"/>
+        <line x1="69.3" y1="81" x2="69.3" y2="89.2"/>
+        <circle cx="69.3" cy="90.7" r="0.8"/>
+        <line x1="27.3" y1="19" x2="27.3" y2="5.5"/>
+        <circle cx="27.3" cy="4.0" r="0.8"/>
+        <line x1="31.6" y1="19" x2="31.6" y2="0.5"/>
+        <circle cx="31.6" cy="-1.0" r="0.8"/>
+        <line x1="36.6" y1="19" x2="36.6" y2="2.1"/>
+        <circle cx="36.6" cy="0.6" r="0.8"/>
+        <line x1="41.2" y1="19" x2="41.2" y2="7.3"/>
+        <circle cx="41.2" cy="5.8" r="0.8"/>
+        <line x1="46.2" y1="19" x2="46.2" y2="6.9"/>
+        <circle cx="46.2" cy="5.4" r="0.8"/>
+        <line x1="49.8" y1="19" x2="49.8" y2="9.9"/>
+        <circle cx="49.8" cy="8.4" r="0.8"/>
+        <line x1="54.7" y1="19" x2="54.7" y2="4.3"/>
+        <circle cx="54.7" cy="2.8" r="0.8"/>
+        <line x1="58.9" y1="19" x2="58.9" y2="5.5"/>
+        <circle cx="58.9" cy="4.0" r="0.8"/>
+        <line x1="63.7" y1="19" x2="63.7" y2="7.8"/>
+        <circle cx="63.7" cy="6.3" r="0.8"/>
+        <line x1="68.0" y1="19" x2="68.0" y2="0.5"/>
+        <circle cx="68.0" cy="-1.0" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">25</span>
+        <p class="desc-title">Frame 25 Title</p>
+        <p class="desc-body">Description for frame 25. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 25">
+          <div class="img-placeholder">Image 25</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 25 -->
+
+    <!-- ── FRAME 26 ─────────────────────────── -->
+    <div class="frame" id="f25">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="27.0" y1="81" x2="27.0" y2="94.6"/>
+        <circle cx="27.0" cy="96.1" r="0.8"/>
+        <line x1="29.9" y1="81" x2="29.9" y2="97.7"/>
+        <circle cx="29.9" cy="99.2" r="0.8"/>
+        <line x1="34.0" y1="81" x2="34.0" y2="90.8"/>
+        <circle cx="34.0" cy="92.3" r="0.8"/>
+        <line x1="38.4" y1="81" x2="38.4" y2="89.3"/>
+        <circle cx="38.4" cy="90.8" r="0.8"/>
+        <line x1="43.1" y1="81" x2="43.1" y2="96.6"/>
+        <circle cx="43.1" cy="98.1" r="0.8"/>
+        <line x1="45.2" y1="81" x2="45.2" y2="99.5"/>
+        <circle cx="45.2" cy="101.0" r="0.8"/>
+        <line x1="49.3" y1="81" x2="49.3" y2="98.0"/>
+        <circle cx="49.3" cy="99.5" r="0.8"/>
+        <line x1="53.5" y1="81" x2="53.5" y2="99.5"/>
+        <circle cx="53.5" cy="101.0" r="0.8"/>
+        <line x1="58.4" y1="81" x2="58.4" y2="96.9"/>
+        <circle cx="58.4" cy="98.4" r="0.8"/>
+        <line x1="61.7" y1="81" x2="61.7" y2="96.8"/>
+        <circle cx="61.7" cy="98.3" r="0.8"/>
+        <line x1="66.0" y1="81" x2="66.0" y2="89.0"/>
+        <circle cx="66.0" cy="90.5" r="0.8"/>
+        <line x1="69.2" y1="81" x2="69.2" y2="92.9"/>
+        <circle cx="69.2" cy="94.4" r="0.8"/>
+        <line x1="27.0" y1="19" x2="27.0" y2="1.5"/>
+        <circle cx="27.0" cy="0.0" r="0.8"/>
+        <line x1="31.3" y1="19" x2="31.3" y2="0.5"/>
+        <circle cx="31.3" cy="-1.0" r="0.8"/>
+        <line x1="35.2" y1="19" x2="35.2" y2="3.2"/>
+        <circle cx="35.2" cy="1.7" r="0.8"/>
+        <line x1="40.1" y1="19" x2="40.1" y2="0.5"/>
+        <circle cx="40.1" cy="-1.0" r="0.8"/>
+        <line x1="44.6" y1="19" x2="44.6" y2="4.2"/>
+        <circle cx="44.6" cy="2.7" r="0.8"/>
+        <line x1="49.7" y1="19" x2="49.7" y2="9.7"/>
+        <circle cx="49.7" cy="8.2" r="0.8"/>
+        <line x1="54.6" y1="19" x2="54.6" y2="10.1"/>
+        <circle cx="54.6" cy="8.6" r="0.8"/>
+        <line x1="58.6" y1="19" x2="58.6" y2="0.5"/>
+        <circle cx="58.6" cy="-1.0" r="0.8"/>
+        <line x1="63.6" y1="19" x2="63.6" y2="8.9"/>
+        <circle cx="63.6" cy="7.4" r="0.8"/>
+        <line x1="67.6" y1="19" x2="67.6" y2="9.3"/>
+        <circle cx="67.6" cy="7.8" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">26</span>
+        <p class="desc-title">Frame 26 Title</p>
+        <p class="desc-body">Description for frame 26. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 26">
+          <div class="img-placeholder">Image 26</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 26 -->
+
+    <!-- ── FRAME 27 ─────────────────────────── -->
+    <div class="frame" id="f26">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="27.8" y1="81" x2="27.8" y2="96.2"/>
+        <circle cx="27.8" cy="97.7" r="0.8"/>
+        <line x1="29.6" y1="81" x2="29.6" y2="90.1"/>
+        <circle cx="29.6" cy="91.6" r="0.8"/>
+        <line x1="33.7" y1="81" x2="33.7" y2="96.2"/>
+        <circle cx="33.7" cy="97.7" r="0.8"/>
+        <line x1="37.3" y1="81" x2="37.3" y2="94.1"/>
+        <circle cx="37.3" cy="95.6" r="0.8"/>
+        <line x1="41.9" y1="81" x2="41.9" y2="95.7"/>
+        <circle cx="41.9" cy="97.2" r="0.8"/>
+        <line x1="45.3" y1="81" x2="45.3" y2="91.1"/>
+        <circle cx="45.3" cy="92.6" r="0.8"/>
+        <line x1="48.2" y1="81" x2="48.2" y2="94.3"/>
+        <circle cx="48.2" cy="95.8" r="0.8"/>
+        <line x1="50.9" y1="81" x2="50.9" y2="95.7"/>
+        <circle cx="50.9" cy="97.2" r="0.8"/>
+        <line x1="56.0" y1="81" x2="56.0" y2="94.3"/>
+        <circle cx="56.0" cy="95.8" r="0.8"/>
+        <line x1="58.8" y1="81" x2="58.8" y2="99.5"/>
+        <circle cx="58.8" cy="101.0" r="0.8"/>
+        <line x1="62.2" y1="81" x2="62.2" y2="97.2"/>
+        <circle cx="62.2" cy="98.7" r="0.8"/>
+        <line x1="65.4" y1="81" x2="65.4" y2="93.3"/>
+        <circle cx="65.4" cy="94.8" r="0.8"/>
+        <line x1="69.5" y1="81" x2="69.5" y2="97.5"/>
+        <circle cx="69.5" cy="99.0" r="0.8"/>
+        <line x1="27.4" y1="19" x2="27.4" y2="5.7"/>
+        <circle cx="27.4" cy="4.2" r="0.8"/>
+        <line x1="30.9" y1="19" x2="30.9" y2="1.9"/>
+        <circle cx="30.9" cy="0.4" r="0.8"/>
+        <line x1="35.4" y1="19" x2="35.4" y2="1.3"/>
+        <circle cx="35.4" cy="-0.2" r="0.8"/>
+        <line x1="39.8" y1="19" x2="39.8" y2="8.6"/>
+        <circle cx="39.8" cy="7.1" r="0.8"/>
+        <line x1="43.0" y1="19" x2="43.0" y2="2.7"/>
+        <circle cx="43.0" cy="1.2" r="0.8"/>
+        <line x1="47.2" y1="19" x2="47.2" y2="0.5"/>
+        <circle cx="47.2" cy="-1.0" r="0.8"/>
+        <line x1="53.0" y1="19" x2="53.0" y2="6.4"/>
+        <circle cx="53.0" cy="4.9" r="0.8"/>
+        <line x1="55.4" y1="19" x2="55.4" y2="3.4"/>
+        <circle cx="55.4" cy="1.9" r="0.8"/>
+        <line x1="61.2" y1="19" x2="61.2" y2="10.6"/>
+        <circle cx="61.2" cy="9.1" r="0.8"/>
+        <line x1="64.3" y1="19" x2="64.3" y2="9.6"/>
+        <circle cx="64.3" cy="8.1" r="0.8"/>
+        <line x1="69.7" y1="19" x2="69.7" y2="0.5"/>
+        <circle cx="69.7" cy="-1.0" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">27</span>
+        <p class="desc-title">Frame 27 Title</p>
+        <p class="desc-body">Description for frame 27. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 27">
+          <div class="img-placeholder">Image 27</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 27 -->
+
+    <!-- ── FRAME 28 ─────────────────────────── -->
+    <div class="frame" id="f27">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="27.1" y1="81" x2="27.1" y2="93.1"/>
+        <circle cx="27.1" cy="94.6" r="0.8"/>
+        <line x1="30.4" y1="81" x2="30.4" y2="90.7"/>
+        <circle cx="30.4" cy="92.2" r="0.8"/>
+        <line x1="34.7" y1="81" x2="34.7" y2="96.9"/>
+        <circle cx="34.7" cy="98.4" r="0.8"/>
+        <line x1="37.1" y1="81" x2="37.1" y2="94.0"/>
+        <circle cx="37.1" cy="95.5" r="0.8"/>
+        <line x1="41.8" y1="81" x2="41.8" y2="91.0"/>
+        <circle cx="41.8" cy="92.5" r="0.8"/>
+        <line x1="44.2" y1="81" x2="44.2" y2="94.7"/>
+        <circle cx="44.2" cy="96.2" r="0.8"/>
+        <line x1="48.0" y1="81" x2="48.0" y2="89.1"/>
+        <circle cx="48.0" cy="90.6" r="0.8"/>
+        <line x1="52.0" y1="81" x2="52.0" y2="93.6"/>
+        <circle cx="52.0" cy="95.1" r="0.8"/>
+        <line x1="56.2" y1="81" x2="56.2" y2="99.0"/>
+        <circle cx="56.2" cy="100.5" r="0.8"/>
+        <line x1="59.5" y1="81" x2="59.5" y2="93.9"/>
+        <circle cx="59.5" cy="95.4" r="0.8"/>
+        <line x1="61.4" y1="81" x2="61.4" y2="99.5"/>
+        <circle cx="61.4" cy="101.0" r="0.8"/>
+        <line x1="65.8" y1="81" x2="65.8" y2="98.5"/>
+        <circle cx="65.8" cy="100.0" r="0.8"/>
+        <line x1="69.6" y1="81" x2="69.6" y2="98.0"/>
+        <circle cx="69.6" cy="99.5" r="0.8"/>
+        <line x1="26.3" y1="19" x2="26.3" y2="3.0"/>
+        <circle cx="26.3" cy="1.5" r="0.8"/>
+        <line x1="32.1" y1="19" x2="32.1" y2="5.2"/>
+        <circle cx="32.1" cy="3.7" r="0.8"/>
+        <line x1="36.2" y1="19" x2="36.2" y2="0.5"/>
+        <circle cx="36.2" cy="-1.0" r="0.8"/>
+        <line x1="38.6" y1="19" x2="38.6" y2="2.7"/>
+        <circle cx="38.6" cy="1.2" r="0.8"/>
+        <line x1="43.1" y1="19" x2="43.1" y2="0.5"/>
+        <circle cx="43.1" cy="-1.0" r="0.8"/>
+        <line x1="47.9" y1="19" x2="47.9" y2="3.9"/>
+        <circle cx="47.9" cy="2.4" r="0.8"/>
+        <line x1="52.5" y1="19" x2="52.5" y2="5.4"/>
+        <circle cx="52.5" cy="3.9" r="0.8"/>
+        <line x1="55.7" y1="19" x2="55.7" y2="0.9"/>
+        <circle cx="55.7" cy="-0.6" r="0.8"/>
+        <line x1="60.2" y1="19" x2="60.2" y2="0.8"/>
+        <circle cx="60.2" cy="-0.7" r="0.8"/>
+        <line x1="64.5" y1="19" x2="64.5" y2="6.7"/>
+        <circle cx="64.5" cy="5.2" r="0.8"/>
+        <line x1="68.5" y1="19" x2="68.5" y2="3.2"/>
+        <circle cx="68.5" cy="1.7" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">28</span>
+        <p class="desc-title">Frame 28 Title</p>
+        <p class="desc-body">Description for frame 28. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 28">
+          <div class="img-placeholder">Image 28</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 28 -->
+
+    <!-- ── FRAME 29 ─────────────────────────── -->
+    <div class="frame" id="f28">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="26.8" y1="81" x2="26.8" y2="99.5"/>
+        <circle cx="26.8" cy="101.0" r="0.8"/>
+        <line x1="29.9" y1="81" x2="29.9" y2="94.1"/>
+        <circle cx="29.9" cy="95.6" r="0.8"/>
+        <line x1="33.6" y1="81" x2="33.6" y2="91.6"/>
+        <circle cx="33.6" cy="93.1" r="0.8"/>
+        <line x1="36.0" y1="81" x2="36.0" y2="97.5"/>
+        <circle cx="36.0" cy="99.0" r="0.8"/>
+        <line x1="40.1" y1="81" x2="40.1" y2="92.0"/>
+        <circle cx="40.1" cy="93.5" r="0.8"/>
+        <line x1="42.5" y1="81" x2="42.5" y2="89.0"/>
+        <circle cx="42.5" cy="90.5" r="0.8"/>
+        <line x1="47.2" y1="81" x2="47.2" y2="96.5"/>
+        <circle cx="47.2" cy="98.0" r="0.8"/>
+        <line x1="49.1" y1="81" x2="49.1" y2="92.6"/>
+        <circle cx="49.1" cy="94.1" r="0.8"/>
+        <line x1="52.5" y1="81" x2="52.5" y2="91.7"/>
+        <circle cx="52.5" cy="93.2" r="0.8"/>
+        <line x1="56.4" y1="81" x2="56.4" y2="93.8"/>
+        <circle cx="56.4" cy="95.3" r="0.8"/>
+        <line x1="59.9" y1="81" x2="59.9" y2="92.4"/>
+        <circle cx="59.9" cy="93.9" r="0.8"/>
+        <line x1="63.9" y1="81" x2="63.9" y2="99.5"/>
+        <circle cx="63.9" cy="101.0" r="0.8"/>
+        <line x1="67.4" y1="81" x2="67.4" y2="93.9"/>
+        <circle cx="67.4" cy="95.4" r="0.8"/>
+        <line x1="69.6" y1="81" x2="69.6" y2="97.2"/>
+        <circle cx="69.6" cy="98.7" r="0.8"/>
+        <line x1="28.0" y1="19" x2="28.0" y2="0.6"/>
+        <circle cx="28.0" cy="-0.9" r="0.8"/>
+        <line x1="30.1" y1="19" x2="30.1" y2="1.7"/>
+        <circle cx="30.1" cy="0.2" r="0.8"/>
+        <line x1="35.3" y1="19" x2="35.3" y2="10.9"/>
+        <circle cx="35.3" cy="9.4" r="0.8"/>
+        <line x1="39.2" y1="19" x2="39.2" y2="9.6"/>
+        <circle cx="39.2" cy="8.1" r="0.8"/>
+        <line x1="41.5" y1="19" x2="41.5" y2="0.5"/>
+        <circle cx="41.5" cy="-1.0" r="0.8"/>
+        <line x1="45.2" y1="19" x2="45.2" y2="0.5"/>
+        <circle cx="45.2" cy="-1.0" r="0.8"/>
+        <line x1="49.8" y1="19" x2="49.8" y2="0.5"/>
+        <circle cx="49.8" cy="-1.0" r="0.8"/>
+        <line x1="54.7" y1="19" x2="54.7" y2="8.6"/>
+        <circle cx="54.7" cy="7.1" r="0.8"/>
+        <line x1="56.9" y1="19" x2="56.9" y2="7.8"/>
+        <circle cx="56.9" cy="6.3" r="0.8"/>
+        <line x1="61.6" y1="19" x2="61.6" y2="0.5"/>
+        <circle cx="61.6" cy="-1.0" r="0.8"/>
+        <line x1="64.6" y1="19" x2="64.6" y2="1.4"/>
+        <circle cx="64.6" cy="-0.1" r="0.8"/>
+        <line x1="69.9" y1="19" x2="69.9" y2="8.9"/>
+        <circle cx="69.9" cy="7.4" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">29</span>
+        <p class="desc-title">Frame 29 Title</p>
+        <p class="desc-body">Description for frame 29. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 29">
+          <div class="img-placeholder">Image 29</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 29 -->
+
+    <!-- ── FRAME 30 ─────────────────────────── -->
+    <div class="frame" id="f29">
+
+      <svg class="bleed-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="27.6" y1="81" x2="27.6" y2="98.2"/>
+        <circle cx="27.6" cy="99.7" r="0.8"/>
+        <line x1="29.4" y1="81" x2="29.4" y2="99.5"/>
+        <circle cx="29.4" cy="101.0" r="0.8"/>
+        <line x1="33.7" y1="81" x2="33.7" y2="91.4"/>
+        <circle cx="33.7" cy="92.9" r="0.8"/>
+        <line x1="36.3" y1="81" x2="36.3" y2="90.4"/>
+        <circle cx="36.3" cy="91.9" r="0.8"/>
+        <line x1="40.9" y1="81" x2="40.9" y2="90.2"/>
+        <circle cx="40.9" cy="91.7" r="0.8"/>
+        <line x1="42.6" y1="81" x2="42.6" y2="96.9"/>
+        <circle cx="42.6" cy="98.4" r="0.8"/>
+        <line x1="46.5" y1="81" x2="46.5" y2="98.3"/>
+        <circle cx="46.5" cy="99.8" r="0.8"/>
+        <line x1="49.9" y1="81" x2="49.9" y2="91.3"/>
+        <circle cx="49.9" cy="92.8" r="0.8"/>
+        <line x1="53.4" y1="81" x2="53.4" y2="93.2"/>
+        <circle cx="53.4" cy="94.7" r="0.8"/>
+        <line x1="56.2" y1="81" x2="56.2" y2="99.5"/>
+        <circle cx="56.2" cy="101.0" r="0.8"/>
+        <line x1="60.3" y1="81" x2="60.3" y2="96.5"/>
+        <circle cx="60.3" cy="98.0" r="0.8"/>
+        <line x1="62.4" y1="81" x2="62.4" y2="93.9"/>
+        <circle cx="62.4" cy="95.4" r="0.8"/>
+        <line x1="65.5" y1="81" x2="65.5" y2="91.7"/>
+        <circle cx="65.5" cy="93.2" r="0.8"/>
+        <line x1="69.7" y1="81" x2="69.7" y2="94.6"/>
+        <circle cx="69.7" cy="96.1" r="0.8"/>
+        <line x1="26.3" y1="19" x2="26.3" y2="3.7"/>
+        <circle cx="26.3" cy="2.2" r="0.8"/>
+        <line x1="31.7" y1="19" x2="31.7" y2="10.9"/>
+        <circle cx="31.7" cy="9.4" r="0.8"/>
+        <line x1="34.7" y1="19" x2="34.7" y2="4.5"/>
+        <circle cx="34.7" cy="3.0" r="0.8"/>
+        <line x1="38.5" y1="19" x2="38.5" y2="3.2"/>
+        <circle cx="38.5" cy="1.7" r="0.8"/>
+        <line x1="43.2" y1="19" x2="43.2" y2="2.6"/>
+        <circle cx="43.2" cy="1.1" r="0.8"/>
+        <line x1="45.6" y1="19" x2="45.6" y2="1.0"/>
+        <circle cx="45.6" cy="-0.5" r="0.8"/>
+        <line x1="50.4" y1="19" x2="50.4" y2="0.5"/>
+        <circle cx="50.4" cy="-1.0" r="0.8"/>
+        <line x1="53.8" y1="19" x2="53.8" y2="0.5"/>
+        <circle cx="53.8" cy="-1.0" r="0.8"/>
+        <line x1="58.2" y1="19" x2="58.2" y2="8.2"/>
+        <circle cx="58.2" cy="6.7" r="0.8"/>
+        <line x1="62.1" y1="19" x2="62.1" y2="1.6"/>
+        <circle cx="62.1" cy="0.1" r="0.8"/>
+        <line x1="65.8" y1="19" x2="65.8" y2="10.5"/>
+        <circle cx="65.8" cy="9.0" r="0.8"/>
+        <line x1="70.1" y1="19" x2="70.1" y2="1.6"/>
+        <circle cx="70.1" cy="0.1" r="0.8"/>
+      </svg>
+
+      <div class="desc">
+        <span class="desc-num">30</span>
+        <p class="desc-title">Frame 30 Title</p>
+        <p class="desc-body">Description for frame 30. Edit this text to describe the image or moment shown.</p>
+      </div>
+
+      <div class="img-wrap">
+        <div class="img-box">
+          <img src="" alt="Frame 30">
+          <div class="img-placeholder">Image 30</div>
+        </div>
+      </div>
+
+    </div><!-- /frame 30 -->
+
+  </div><!-- /track -->
+</div><!-- /stage -->
+
+<script>
+const TOTAL = document.querySelectorAll('.frame').length;
+let current = 0;
+let animating = false;
+
+const track    = document.getElementById('track');
+const counter  = document.getElementById('frameCount');
+const progress = document.getElementById('progress');
+const hint     = document.getElementById('hint');
+const frames   = document.querySelectorAll('.frame');
+
+function goTo(idx) {
+  if (animating) return;
+  if (idx < 0 || idx >= TOTAL) return;
+  animating = true;
+
+  frames.forEach((f, i) => {
+    f.classList.remove('active', 'visited');
+    if (i === idx) f.classList.add('active');
+    else if (i < idx) f.classList.add('visited');
+  });
+
+  track.style.transform = `translateX(${-idx * 100}vw)`;
+
+  current = idx;
+  counter.textContent = String(idx + 1).padStart(2,'0') + ' / ' + String(TOTAL).padStart(2,'0');
+  progress.style.width = ((idx / (TOTAL - 1)) * 100) + '%';
+
+  if (idx > 0) hint.style.opacity = '0';
+
+  setTimeout(() => { animating = false; }, 700);
+}
+
+document.addEventListener('click', () => {
+  if (current < TOTAL - 1) goTo(current + 1);
+  else goTo(0);
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+    e.preventDefault();
+    if (current < TOTAL - 1) goTo(current + 1);
+  }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (current > 0) goTo(current - 1);
+  }
+});
+
+let touchX = 0;
+document.addEventListener('touchstart', e => { touchX = e.touches[0].clientX; }, {passive:true});
+document.addEventListener('touchend', e => {
+  const dx = touchX - e.changedTouches[0].clientX;
+  if (Math.abs(dx) > 40) dx > 0 ? goTo(current + 1) : goTo(current - 1);
+}, {passive:true});
+
+const cur = document.getElementById('cursor');
+document.addEventListener('mousemove', e => {
+  cur.style.left = e.clientX + 'px';
+  cur.style.top  = e.clientY + 'px';
+});
+document.addEventListener('mousedown', () => cur.classList.add('big'));
+document.addEventListener('mouseup',   () => cur.classList.remove('big'));
+
+// Show images that have a real src
+document.querySelectorAll('.img-box img').forEach(img => {
+  const s = img.getAttribute('src');
+  if (s && s.trim() !== '') {
+    function show() {
+      img.style.display = 'block';
+      const ph = img.nextElementSibling;
+      if (ph && ph.classList.contains('img-placeholder')) ph.style.display = 'none';
+    }
+    img.complete && img.naturalWidth > 0 ? show() : img.addEventListener('load', show);
+  }
+});
+
+goTo(0);
+</script>
+</body>
+</html>
